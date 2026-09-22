@@ -127,4 +127,88 @@ $app->post('/personagens', function ($request, $response) use ($arquivo) {
         ->withStatus(201);
 });
 
+// PUT /personagens/{id}
+$app->put('/personagens/{id}', function ($request, $response, array $args) use ($arquivo) {
+
+    $personagens = lerPersonagens($arquivo);
+    $id = (int) $args['id'];
+    $dados = $request->getParsedBody();
+
+    foreach ($personagens as &$personagem) {
+
+        if ($personagem['id'] === $id) {
+
+            $personagem['nome'] = $dados['nome'] ?? $personagem['nome'];
+            $personagem['classe'] = $dados['classe'] ?? $personagem['classe'];
+            $personagem['nivel'] = $dados['nivel'] ?? $personagem['nivel'];
+
+            file_put_contents(
+                $arquivo,
+                json_encode(
+                    $personagens,
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+                )
+            );
+
+            $response->getBody()->write(
+                json_encode(
+                    $personagem,
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+                )
+            );
+
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(200);
+        }
+    }
+
+    $response->getBody()->write(
+        json_encode(
+            ['erro' => 'Personagem não encontrado'],
+            JSON_UNESCAPED_UNICODE
+        )
+    );
+
+    return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(404);
+});
+// DELETE /personagens/{id}
+$app->delete('/personagens/{id}', function ($request, $response, array $args) use ($arquivo) {
+
+    $personagens = lerPersonagens($arquivo);
+    $id = (int) $args['id'];
+
+    foreach ($personagens as $indice => $personagem) {
+
+        if ($personagem['id'] === $id) {
+
+            unset($personagens[$indice]);
+
+            $personagens = array_values($personagens);
+
+            file_put_contents(
+                $arquivo,
+                json_encode(
+                    $personagens,
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+                )
+            );
+
+            return $response->withStatus(204);
+        }
+    }
+
+    $response->getBody()->write(
+        json_encode(
+            ['erro' => 'Personagem não encontrado'],
+            JSON_UNESCAPED_UNICODE
+        )
+    );
+
+    return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(404);
+});
 $app->run();
